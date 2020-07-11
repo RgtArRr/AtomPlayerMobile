@@ -1,10 +1,10 @@
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
-import { Button, Text, TextInput, View, Alert } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import GDrive from 'react-native-google-drive-api-wrapper';
+
 import TrackPlayer from 'react-native-track-player';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -14,10 +14,11 @@ import PlayLists from './components/PlayLists';
 import Songs from './components/Songs';
 
 import { GoogleSignin } from 'react-native-google-signin';
+import GDrive from 'react-native-google-drive-api-wrapper';
 
 TrackPlayer.setupPlayer().then(() => {
-    TrackPlayer.registerPlaybackService(() => require('./service.js'));
     console.log('ready to use player');
+    TrackPlayer.registerPlaybackService(() => require('./service.js'));
     TrackPlayer.updateOptions({
         ratingType: TrackPlayer.RATING_5_STARS,
 
@@ -31,7 +32,6 @@ TrackPlayer.setupPlayer().then(() => {
             TrackPlayer.CAPABILITY_STOP,
         ],
 
-        // An array of capabilities that will show up when the notification is in the compact form on Android
         compactCapabilities: [
             TrackPlayer.CAPABILITY_PLAY,
             TrackPlayer.CAPABILITY_PAUSE,
@@ -39,21 +39,18 @@ TrackPlayer.setupPlayer().then(() => {
     });
 });
 
-const SettingsStack = createStackNavigator();
+const SongStack = createStackNavigator();
 
 function MusicStackScreen () {
     return (
-        <SettingsStack.Navigator screenOptions={{
+        <SongStack.Navigator screenOptions={{
             headerTintColor: '#fff',
-            headerStyle: {backgroundColor: '#000'},
-            headerTitleStyle: {
-                fontSize: 40,
-                fontWeight: 'bold',
-            },
+            headerStyle: styles.tabBarHeader,
+            headerTitleStyle: styles.tabBarHeaderTitle,
         }}>
-            <SettingsStack.Screen name="PlayLists" component={PlayLists}/>
-            <SettingsStack.Screen name="Songs" options={{title: ''}} component={Songs}/>
-        </SettingsStack.Navigator>
+            <SongStack.Screen name="PlayLists" component={PlayLists}/>
+            <SongStack.Screen name="Songs" options={{title: ''}} component={Songs}/>
+        </SongStack.Navigator>
     );
 }
 
@@ -62,49 +59,47 @@ const Tab = createBottomTabNavigator();
 export default function App () {
     const [isSignedIn, setSignIn] = useState(false);
 
+    useEffect(() => {
+        console.log('App startup');
+    });
+
     async function checkSignIn () {
         try {
+            /*
             await GoogleSignin.signInSilently();
             const tokens = await GoogleSignin.getTokens();
-            GDrive.setAccessToken(tokens.accessToken);
+            GDrive.setAccessToken(tokens.accessToken);*/
             setSignIn(true);
         }
         catch (error) {
-            //nothing to do
+            console.log('login', error);
         }
     }
 
+    function icons ({route}) {
+        return {
+            tabBarIcon: ({focused, color, size}) => {
+                let iconName;
+                if (route.name === 'Music') {
+                    iconName = 'ios-musical-notes';
+                } else if (route.name === 'Player') {
+                    iconName = 'ios-play';
+                }
+                return <Ionicons name={iconName} size={size} color={color}/>;
+            },
+        };
+    }
+
     useEffect(() => {
-        checkSignIn();
+        let signin = checkSignIn();
     }, []);
 
     return (
         isSignedIn ? (
             <NavigationContainer>
-                <Tab.Navigator screenOptions={({route}) => ({
-                    tabBarIcon: ({focused, color, size}) => {
-                        let iconName;
-                        if (route.name === 'Music') {
-                            iconName = 'ios-musical-notes';
-                        } else if (route.name === 'Download') {
-                            iconName = 'ios-download';
-                        } else if (route.name === 'Player') {
-                            iconName = 'ios-play';
-                        }
-                        return <Ionicons name={iconName} size={size} color={color}/>;
-                    },
-                })}
-                               tabBarOptions={{
-                                   activeTintColor: 'tomato',
-                                   inactiveTintColor: '#ECEAEB',
-                                   style: {
-                                       height: 55,
-                                       backgroundColor: '#333333',
-                                   },
-                               }}>
+                <Tab.Navigator screenOptions={icons} tabBarOptions={{style: styles.tabBarFooter}}>
                     <Tab.Screen name="Music" component={MusicStackScreen}/>
                     <Tab.Screen name="Player" component={Player}/>
-                    {/*<Tab.Screen name="Download" component={DownloadYt}/>*/}
                 </Tab.Navigator>
             </NavigationContainer>
         ) : (
@@ -112,3 +107,17 @@ export default function App () {
         )
     );
 }
+
+const styles = StyleSheet.create({
+    tabBarHeader: {
+        backgroundColor: '#000',
+    },
+    tabBarHeaderTitle: {
+        fontSize: 40,
+        fontWeight: 'bold',
+    },
+    tabBarFooter: {
+        height: 55,
+        backgroundColor: '#333333',
+    },
+});
