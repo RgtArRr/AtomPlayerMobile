@@ -1,10 +1,12 @@
 import GDrive from 'react-native-google-drive-api-wrapper';
 
+const CryptoJS = require('crypto-js');
 const RNFS = require('react-native-fs');
 
 module.exports = function () {
     const self = this;
     this.db;
+    this.setQueue;
 
     this.init = function () {
         self.db = RNFS.DocumentDirectoryPath + '/atomplayer.db';
@@ -46,7 +48,10 @@ module.exports = function () {
         });
     };
 
-    this.setup = function (accessToken) {
+    this.setup = function (accessToken, setQueue) {
+        // self.___delete();
+        // return;
+        self.setQueue = setQueue;
         GDrive.setAccessToken(accessToken);
         GDrive.init();
         self.getDB((localdb) => {
@@ -62,7 +67,7 @@ module.exports = function () {
                     }).then((res) => {
                         return res.json();
                     }).then((remotedb) => {
-                        processSync(remotedb, localdb);
+                        self.processSync(remotedb, localdb);
                     }).catch((err) => {
                         console.log('download remote db', err);
                     });
@@ -105,14 +110,14 @@ module.exports = function () {
                 }
             });
 
-            songstoAdd.slice(0, 1).forEach((ytid) => {
+            songstoAdd.forEach((ytid) => {
                 queue.push({ytid: ytid, playlistid: remotPlayList.id});
                 console.log('add song to queue ' + ytid);
             });
         });
-        processQueue(queue, localdb, () => {
+        self.processQueue(queue, localdb, () => {
             console.log('write on file');
-            db.saveDB(localdb, () => {
+            self.saveDB(localdb, () => {
                 console.log('success sync');
                 self.checkFiles(localdb);
             });
@@ -120,12 +125,13 @@ module.exports = function () {
     };
 
     this.processQueue = function (queue, localdb, callbackQueueEmpty) {
+        self.setQueue(queue.length);
         let song = queue.pop();
         if (!song) {
             callbackQueueEmpty();
         } else {
-            let filename = getId(15) + '.mp3';
-            download(song.ytid, filename, localdb, (metadata) => {
+            let filename = self.getId(15) + '.mp3';
+            self.download(song.ytid, filename, localdb, (metadata) => {
                 let i = localdb.findIndex((r) => {return r.id === song.playlistid;});
                 if (i !== -1) {
                     localdb[i].songs.push({
@@ -137,7 +143,7 @@ module.exports = function () {
                     });
                     console.log('save song ' + song.ytid);
                 }
-                processQueue(queue, localdb, callbackQueueEmpty);
+                self.processQueue(queue, localdb, callbackQueueEmpty);
             });
         }
     };
@@ -159,7 +165,7 @@ module.exports = function () {
             return response.json();
         }).then((json) => {
             if (json && json.timeout) {
-                setTimeout(() => {download(ytid, filename, localdb, callbackFinish);}, json.timeout * 1000);
+                setTimeout(() => {self.download(ytid, filename, localdb, callbackFinish);}, json.timeout * 1000);
             } else {
                 let task = RNFS.downloadFile({
                     fromUrl: 'https://' + json.url, toFile: RNFS.DocumentDirectoryPath + '/' + filename,
@@ -185,6 +191,8 @@ module.exports = function () {
                         let i = songs.findIndex((res) => {return res.filename === file.name;});
                         if (i === -1) {
                             RNFS.unlink(file.path).then(() => {console.log('delete file ' + file.name);});
+                        } else {
+                            console.log(file.name);
                         }
                     }
                 }
