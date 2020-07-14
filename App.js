@@ -14,7 +14,8 @@ import PlayLists from './components/PlayLists';
 import Songs from './components/Songs';
 
 import { GoogleSignin } from 'react-native-google-signin';
-import GDrive from 'react-native-google-drive-api-wrapper';
+
+const Sync = require('./components/Sync');
 
 TrackPlayer.setupPlayer().then(() => {
     console.log('ready to use player');
@@ -40,6 +41,9 @@ TrackPlayer.setupPlayer().then(() => {
 });
 
 const SongStack = createStackNavigator();
+const Tab = createBottomTabNavigator();
+const instanceSync = new Sync();
+instanceSync.init();
 
 function MusicStackScreen () {
     return (
@@ -54,26 +58,19 @@ function MusicStackScreen () {
     );
 }
 
-const Tab = createBottomTabNavigator();
-
 export default function App () {
     const [isSignedIn, setSignIn] = useState(false);
 
-    useEffect(() => {
-        console.log('App startup');
-    });
-
     async function checkSignIn () {
-        try {
-            /*
-            await GoogleSignin.signInSilently();
-            const tokens = await GoogleSignin.getTokens();
-            GDrive.setAccessToken(tokens.accessToken);*/
-            setSignIn(true);
-        }
-        catch (error) {
-            console.log('login', error);
-        }
+        let isSignedIn = await GoogleSignin.isSignedIn();
+        setSignIn(isSignedIn);
+        GoogleSignin.signInSilently().then((res) => {
+            GoogleSignin.getTokens().then((tokens) => {
+                // instanceSync.setup(tokens.accessToken);
+            });
+        }).catch((err) => {
+            console.log(err);
+        });
     }
 
     function icons ({route}) {
@@ -91,7 +88,8 @@ export default function App () {
     }
 
     useEffect(() => {
-        let signin = checkSignIn();
+        console.log('App startup');
+        checkSignIn();
     }, []);
 
     return (
@@ -102,9 +100,7 @@ export default function App () {
                     <Tab.Screen name="Player" component={Player}/>
                 </Tab.Navigator>
             </NavigationContainer>
-        ) : (
-            <SignIn setSignIn={setSignIn}/>
-        )
+        ) : (<SignIn setSignIn={setSignIn}/>)
     );
 }
 
