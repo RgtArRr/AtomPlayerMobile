@@ -13,7 +13,6 @@ const DATA = [
         id: 'bd7acbea-c1b1-46c2-aed5-3ad53abb28ba',
         title: 'Rock&roll',
         songs: [],
-
     },
     {
         id: '3ac68afc-c605-48d3-a4f8-fbd91aa97f63',
@@ -22,12 +21,13 @@ const DATA = [
     },
     {
         id: '58694a0f-3da1-471f-bd96-145571e29d72',
-        title: 'Para cuando acabe el peronismo',
+        title: 'Para cuando acabe la cuarentena',
         songs: [],
     },
 ];
 
-export default function PlayLists ({navigation}) {
+export default function PlayLists ({route, navigation}) {
+    const {data} = route.params;
 
     function renderSeparator () {
         return (
@@ -44,23 +44,21 @@ export default function PlayLists ({navigation}) {
     return (
         <SafeAreaView style={styles.container}>
             <FlatList ItemSeparatorComponent={renderSeparator} ListHeaderComponent={FlatListHeader}
-                      data={DATA}
+                      data={data}
                       renderItem={({item}) => (
                           <ListItem
                               component={TouchableHighlight}
                               onPress={(e) => {
                                   navigation.navigate('Songs', {
-                                      playlistId: item.id,
-                                      name: item.title,
+                                      name: item.name,
+                                      songs: item.songs
                                   });
                               }}
-
                               id={item.id}
-                              subtitle={'1hr duration'}
-                              title={item.title}
+                              title={item.name}
                               chevron={{color: 'white', type: 'ionicon', name: 'ios-arrow-forward'}}
 
-                              badge={{value: 20, textStyle: styles.badge}}
+                              badge={{value: item.songs.length, textStyle: styles.badge}}
                               containerStyle={styles.list}
                               titleStyle={styles.listTitle}
                               subtitleStyle={styles.listSubtitle}
@@ -94,8 +92,8 @@ const styles = StyleSheet.create({
         borderRadius: 15,
         paddingTop: 5,
         paddingBottom: 5,
-        paddingLeft: 8,
-        paddingRight: 8,
+        paddingLeft: 10,
+        paddingRight: 10,
     },
     separatorList: {
         height: 0.3,

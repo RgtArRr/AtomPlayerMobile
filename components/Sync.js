@@ -2,6 +2,7 @@ import GDrive from 'react-native-google-drive-api-wrapper';
 
 const CryptoJS = require('crypto-js');
 const RNFS = require('react-native-fs');
+import * as RootNavigation from './RootNavigation';
 
 module.exports = function () {
     const self = this;
@@ -35,6 +36,7 @@ module.exports = function () {
 
     this.saveDB = function (content, callbackSuccess) {
         RNFS.writeFile(self.db, JSON.stringify(content)).then(() => {
+            RootNavigation.navigate('PlayLists', {data: content});
             callbackSuccess();
         }).catch((err) => {
             console.log('savedb', err);
